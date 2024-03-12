@@ -26,8 +26,24 @@ router.get("/", async (req, res) => {
     }
 });
 
+// find student by id
+
+router.get("/:studentId", async (req, res) => {
+    try {
+        const student = await Student.findById(req.params.studentId);
+        if (!student) {
+            return res.status(404).json({ error: 'Student not found' });
+        }
+        res.json(student);
+    } catch (err) {
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+
+
 //Give score to a student
-router.post('/:studentId/scores', async (req, res) => {
+router.post('/:studentId/score', async (req, res) => {
   const { studentId } = req.params;
   const { score, type } = req.body;
 
@@ -37,7 +53,7 @@ router.post('/:studentId/scores', async (req, res) => {
       return res.status(404).send({ error: 'Student not found' });
     }
 
-    student.scores.push({ score, type });
+    student.score.push({ score, type });
     await student.save();
 
     res.status(201).send(student);
@@ -47,30 +63,30 @@ router.post('/:studentId/scores', async (req, res) => {
 });
 
 // Update a student's score by score type
-router.put('/:studentId/scores/:scoreType', async (req, res) => {
-  const { studentId, scoreType } = req.params;
-  const { score } = req.body;
-
-  try {
-    const student = await Student.findById(studentId);
-    if (!student) {
-      return res.status(404).send({ error: 'Student not found' });
+router.put('/:studentId/score/:scoreType', async (req, res) => {
+    const { studentId, scoreType } = req.params;
+    const { score } = req.body;
+  
+    try {
+      const student = await Student.findById(studentId);
+      if (!student) {
+        return res.status(404).send({ error: 'Student not found' });
+      }
+  
+      const existingScoreIndex = student.score.findIndex(s => s.type === scoreType);
+      if (existingScoreIndex === -1) {
+        return res.status(404).send({ error: 'Score type not found' });
+      }
+  
+      student.score[existingScoreIndex].score = score;
+      await student.save();
+  
+      res.send(student);
+    } catch (err) {
+      res.status(400).send(err);
     }
-
-    const existingScoreIndex = student.scores.findIndex(s => s.type === scoreType);
-    if (existingScoreIndex === -1) {
-      return res.status(404).send({ error: 'Score type not found' });
-    }
-
-    student.scores[existingScoreIndex].score = score;
-    await student.save();
-
-    res.send(student);
-  } catch (err) {
-    res.status(400).send(err);
-  }
-});
-
+  });
+  
 // Delete a student
 router.delete('/:studentId', async (req, res) => {
   const { studentId } = req.params;
